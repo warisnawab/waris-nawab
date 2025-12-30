@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import CaseList from './components/CaseList';
 import CaseDetails from './components/CaseDetails';
 import { IGCase, CaseType, InitiationSource } from './types';
-import { AlertCircle, X, CheckCircle2, Lock, LogIn, ShieldAlert } from 'lucide-react';
+import { AlertCircle, X, CheckCircle2, Lock, LogIn, ShieldAlert, ShieldCheck, Download, Upload, Database, Save } from 'lucide-react';
 import { DISTRICTS, CASE_TYPES, INITIATION_SOURCES } from './constants';
 
 const MOCK_CASES: IGCase[] = Array.from({ length: 16 }, (_, i) => {
@@ -43,37 +43,89 @@ const MOCK_CASES: IGCase[] = Array.from({ length: 16 }, (_, i) => {
   };
 });
 
-// App component with state and logic for managing cases and authentication
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [cases, setCases] = useState<IGCase[]>(MOCK_CASES);
+  const [cases, setCases] = useState<IGCase[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [loginError, setLoginError] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [backupSuccess, setBackupSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formCaseType, setFormCaseType] = useState<CaseType>('Complaint');
   const [manualCaseId, setManualCaseId] = useState('');
 
-  // Update auto-generated ID when case type changes
-  useEffect(() => {
-    const year = new Date().getFullYear();
-    const serial = (cases.filter(c => c.type === formCaseType).length + 1).toString().padStart(3, '0');
-    setManualCaseId(`IGTA/${formCaseType.toUpperCase()}/${year}/${serial}`);
-  }, [formCaseType, cases]);
-
-  // Load cases from local storage on mount
+  // Load cases with migration safety
   useEffect(() => {
     const saved = localStorage.getItem('igta_cases');
     if (saved) {
-      setCases(JSON.parse(saved));
+      try {
+        const parsed = JSON.parse(saved);
+        // Basic data migration/validation
+        const validated = parsed.map((c: any) => ({
+          ...c,
+          internalNotes: c.internalNotes || '',
+          cooperative: c.cooperative !== undefined ? c.cooperative : true,
+          documents: c.documents || [],
+          communications: c.communications || [],
+          timeline: c.timeline || []
+        }));
+        setCases(validated);
+      } catch (e) {
+        console.error("Failed to load saved cases", e);
+        setCases(MOCK_CASES);
+      }
+    } else {
+      setCases(MOCK_CASES);
     }
   }, []);
 
-  // Sync cases to local storage whenever they change
+  // Sync to local storage
   useEffect(() => {
-    localStorage.setItem('igta_cases', JSON.stringify(cases));
+    if (cases.length > 0) {
+      localStorage.setItem('igta_cases', JSON.stringify(cases));
+    }
   }, [cases]);
+
+  // Export Data Logic
+  const handleExportData = () => {
+    const dataStr = JSON.stringify(cases, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `IGTA_Database_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    setBackupSuccess(true);
+    setTimeout(() => setBackupSuccess(false), 3000);
+  };
+
+  // Import Data Logic
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target?.result as string);
+        if (Array.isArray(importedData)) {
+          if (window.confirm("This will overwrite your current dashboard data. Continue?")) {
+            setCases(importedData);
+            alert("Database restored successfully.");
+          }
+        } else {
+          alert("Invalid backup file format.");
+        }
+      } catch (err) {
+        alert("Error parsing backup file.");
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -94,7 +146,6 @@ const App: React.FC = () => {
   const handleCreateCase = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
     const type = formData.get('type') as CaseType;
     const source = formData.get('source') as InitiationSource;
     const district = formData.get('district') as string;
@@ -142,13 +193,9 @@ const App: React.FC = () => {
 
         <div className="bg-white rounded-[2.5rem] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] max-w-xl w-full p-12 animate-fade-in relative z-10 border border-emerald-100">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center mb-8">
-              <div className="w-48 h-24 bg-white rounded-3xl p-2 shadow-inner border border-gray-100 flex items-center justify-center group overflow-hidden relative">
-                <img 
-                  src="https://raw.githubusercontent.com/GovOfSindh/logos/main/finance_dept_black.png" 
-                  alt="Government of Sindh Finance Department Logo" 
-                  className="h-full w-auto object-contain group-hover:scale-110 transition-transform duration-500"
-                />
+            <div className="inline-flex items-center justify-center mb-6">
+              <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center shadow-inner border border-emerald-100">
+                <ShieldCheck size={48} className="text-emerald-700" />
               </div>
             </div>
             
@@ -250,15 +297,59 @@ const App: React.FC = () => {
             </div>
           )}
           {activeTab === 'reports' && (
-            <div className="bg-white rounded-2xl p-12 border border-gray-100 shadow-sm text-center">
-              <ShieldAlert size={64} className="mx-auto text-emerald-100 mb-6" />
-              <h3 className="text-xl font-black text-gray-800 uppercase mb-2">Compliance Reports</h3>
-              <p className="text-gray-500 font-medium">Monthly reporting module is under maintenance for system migration.</p>
+            <div className="space-y-8">
+              <div className="bg-white rounded-2xl p-10 border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="p-3 bg-emerald-50 text-emerald-700 rounded-2xl">
+                    <Database size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-gray-800 uppercase">System Data Management</h3>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Backup & Disaster Recovery</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="p-8 rounded-3xl border-2 border-emerald-50 bg-emerald-50/20 flex flex-col justify-between">
+                    <div>
+                      <h4 className="text-lg font-black text-emerald-900 uppercase mb-2">Export Database</h4>
+                      <p className="text-sm text-emerald-800/60 font-medium mb-6">Create a complete offline backup of all cases, files, and audit logs. Store this file securely.</p>
+                    </div>
+                    <button 
+                      onClick={handleExportData}
+                      className="flex items-center justify-center gap-3 bg-emerald-800 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:bg-black transition-all"
+                    >
+                      <Download size={18} /> Download JSON Backup
+                    </button>
+                    {backupSuccess && (
+                      <p className="text-center text-[10px] font-black text-emerald-600 uppercase mt-3 animate-bounce">Backup Generated Successfully</p>
+                    )}
+                  </div>
+
+                  <div className="p-8 rounded-3xl border-2 border-gray-100 bg-gray-50/50 flex flex-col justify-between">
+                    <div>
+                      <h4 className="text-lg font-black text-gray-800 uppercase mb-2">Restore Database</h4>
+                      <p className="text-sm text-gray-400 font-medium mb-6">Upload a previously exported JSON backup to restore your system data. This will replace current data.</p>
+                    </div>
+                    <label className="flex items-center justify-center gap-3 bg-white border-2 border-gray-200 text-gray-600 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-md hover:border-emerald-500 cursor-pointer transition-all">
+                      <Upload size={18} /> Upload Backup File
+                      <input type="file" accept=".json" className="hidden" onChange={handleImportData} />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-12 border border-gray-100 shadow-sm text-center">
+                <ShieldAlert size={64} className="mx-auto text-emerald-100 mb-6" />
+                <h3 className="text-xl font-black text-gray-800 uppercase mb-2">Compliance Reports</h3>
+                <p className="text-gray-500 font-medium">Monthly reporting module is under maintenance for system migration.</p>
+              </div>
             </div>
           )}
         </>
       )}
 
+      {/* Case Creation Modal remains same ... */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-emerald-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-up">

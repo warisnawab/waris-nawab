@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, FileText, ClipboardList, ShieldAlert, Settings, LogOut, UserCheck } from 'lucide-react';
+import { LayoutDashboard, FileText, ClipboardList, ShieldAlert, LogOut, UserCheck, ShieldCheck } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,11 +23,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
       <aside className="w-72 bg-emerald-900 text-white flex-shrink-0 flex flex-col shadow-2xl z-20">
         <div className="p-6 border-b border-emerald-800">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center p-1 shadow-inner flex-shrink-0">
-              <svg viewBox="0 0 100 100" className="w-full h-full text-emerald-700">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" />
-                <path d="M50 20 L60 40 L80 40 L65 55 L70 75 L50 60 L30 75 L35 55 L20 40 L40 40 Z" fill="currentColor" />
-              </svg>
+            <div className="w-10 h-10 bg-emerald-800 rounded-lg flex items-center justify-center border border-emerald-700 flex-shrink-0">
+              <ShieldCheck size={20} className="text-emerald-400" />
             </div>
             <div>
               <h1 className="text-[10px] font-black leading-tight uppercase text-white tracking-tight">Inspector General of Treasuries & Accounts</h1>
