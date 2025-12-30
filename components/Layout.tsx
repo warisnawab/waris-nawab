@@ -19,20 +19,19 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
-      {/* Sidebar - Changed to Emerald Green */}
+      {/* Sidebar */}
       <aside className="w-72 bg-emerald-900 text-white flex-shrink-0 flex flex-col shadow-2xl z-20">
         <div className="p-6 border-b border-emerald-800">
-          <div className="flex items-center gap-3 mb-4">
-            {/* Government of Sindh Logo Placeholder */}
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center p-1 shadow-inner">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center p-1 shadow-inner flex-shrink-0">
               <svg viewBox="0 0 100 100" className="w-full h-full text-emerald-700">
                 <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" />
                 <path d="M50 20 L60 40 L80 40 L65 55 L70 75 L50 60 L30 75 L35 55 L20 40 L40 40 Z" fill="currentColor" />
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">IGTA Sindh</h1>
-              <p className="text-[10px] text-emerald-300 uppercase tracking-widest font-semibold">Finance Department</p>
+              <h1 className="text-[10px] font-black leading-tight uppercase text-white tracking-tight">Inspector General of Treasuries & Accounts</h1>
+              <p className="text-[8px] text-emerald-300 uppercase tracking-widest font-bold mt-1">Finance Department, Sindh</p>
             </div>
           </div>
           
@@ -41,8 +40,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
               <UserCheck size={16} className="text-white" />
             </div>
             <div>
-              <p className="text-[10px] text-emerald-300 uppercase font-bold">Inspector General</p>
-              <p className="text-sm font-bold text-white">Kashif Almani</p>
+              <p className="text-[9px] text-emerald-300 uppercase font-bold tracking-wider">Inspector General</p>
+              <p className="text-xs font-black text-white uppercase">Kashif Almani</p>
             </div>
           </div>
         </div>
@@ -64,7 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
           ))}
         </nav>
 
-        <div className="p-4 border-t border-emerald-800">
+        <div className="p-4 border-t border-emerald-800 space-y-4">
           <button
             onClick={onLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-emerald-100 hover:bg-red-700 hover:text-white transition-all group"
@@ -72,6 +71,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
             <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
             <span className="font-medium">Sign Out</span>
           </button>
+          
+          <div className="text-center">
+            <p className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em]">MADE BY WARIS NAWAB PANHWAR</p>
+          </div>
         </div>
       </aside>
 
@@ -83,12 +86,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
           </div>
           <div className="flex items-center gap-6">
             <div className="text-right hidden sm:block">
-              <p className="text-[10px] text-gray-400 font-bold uppercase">Government of Sindh</p>
-              <p className="text-xs font-semibold text-emerald-700">Finance Division | IGTA</p>
+              <p className="text-[10px] text-gray-400 font-black uppercase">Government of Sindh</p>
+              <p className="text-xs font-black text-emerald-700 uppercase">Finance Department | IG Treasuries & Accounts</p>
             </div>
             <div className="h-8 w-[1px] bg-gray-200"></div>
             <div className="flex items-center gap-4">
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-1 rounded-md border border-emerald-200 shadow-sm">ADMINISTRATOR</span>
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-1 rounded-md border border-emerald-200 shadow-sm uppercase tracking-widest">Administrator</span>
               <div className="text-sm text-gray-500 font-medium">{new Date().toLocaleDateString('en-GB', { dateStyle: 'long' })}</div>
             </div>
           </div>

@@ -4,21 +4,23 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import CaseList from './components/CaseList';
 import CaseDetails from './components/CaseDetails';
-import { IGCase, AuditEntry, CaseType } from './types';
-import { ShieldAlert, LogIn, AlertCircle } from 'lucide-react';
+import { IGCase, CaseType, InitiationSource } from './types';
+import { AlertCircle, X, CheckCircle2, Lock, LogIn, ShieldAlert } from 'lucide-react';
+import { DISTRICTS, CASE_TYPES, INITIATION_SOURCES } from './constants';
 
 const MOCK_CASES: IGCase[] = Array.from({ length: 16 }, (_, i) => {
   const types: CaseType[] = ['Complaint', 'Inquiry', 'Inspection', 'Monitoring'];
+  const type = types[i % 4];
   return {
-    id: `IGTA/${types[i % 4].toUpperCase()}/2024/${(i + 1).toString().padStart(3, '0')}`,
-    type: types[i % 4],
+    id: `IGTA/${type.toUpperCase()}/2024/${(i + 1).toString().padStart(3, '0')}`,
+    type: type,
     source: i % 2 === 0 ? 'Finance' : 'DAO',
     dateReceived: `2024-0${(i % 5) + 1}-10`,
     district: i % 2 === 0 ? 'Karachi South' : 'Hyderabad',
     officeConcerned: i % 2 === 0 ? 'DAO Karachi' : 'Treasury Office Hyderabad',
     assignedDIG: 'DIG HQ',
     assignedAIGs: ['AIG Inspection'],
-    status: i === 0 ? 'Awaiting Response' : i === 1 ? 'Closed' : 'Under Process',
+    status: i === 0 ? 'Letter sent to concerned' : i === 1 ? 'Decision sent to Finance Department' : 'No action taken/necessary',
     daysPending: (i + 1) * 7,
     slaBreach: (i + 1) * 7 > 20,
     cooperative: i % 4 !== 0,
@@ -30,7 +32,7 @@ const MOCK_CASES: IGCase[] = Array.from({ length: 16 }, (_, i) => {
       { name: 'Sajid Ali', designation: 'AIG', department: 'IGTA', district: 'Sindh', role: 'Primary' }
     ],
     communications: [
-      { id: '1', outgoingFileRef: 'IGTA/11', incomingFileRef: '', type: 'Initial Letter', dateIssued: '2024-01-10', dueDate: '2024-01-25', status: 'Awaiting', reminderCount: 0 }
+      { id: '1', outgoingFileRef: 'IGTA/11', incomingFileRef: '', type: 'Initial Letter', dateIssued: '2024-01-10', dueDate: '2024-01-25', status: 'Awaiting', reminderCount: 0, recipients: ['DAO Karachi'], recipientCount: 1 }
     ],
     documents: [
       { id: 'doc1', type: 'Finance Letter', fileNumber: 'FD-77', fileName: 'initiation_letter.pdf', summary: 'Formal initiation of inquiry regarding misallocation of treasury funds.', approved: true, uploadDate: '2024-01-10T10:00:00Z' }
@@ -41,14 +43,26 @@ const MOCK_CASES: IGCase[] = Array.from({ length: 16 }, (_, i) => {
   };
 });
 
+// App component with state and logic for managing cases and authentication
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [cases, setCases] = useState<IGCase[]>(MOCK_CASES);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [loginError, setLoginError] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  const [formCaseType, setFormCaseType] = useState<CaseType>('Complaint');
+  const [manualCaseId, setManualCaseId] = useState('');
 
-  // Persist to localStorage for demo "reliability"
+  // Update auto-generated ID when case type changes
+  useEffect(() => {
+    const year = new Date().getFullYear();
+    const serial = (cases.filter(c => c.type === formCaseType).length + 1).toString().padStart(3, '0');
+    setManualCaseId(`IGTA/${formCaseType.toUpperCase()}/${year}/${serial}`);
+  }, [formCaseType, cases]);
+
+  // Load cases from local storage on mount
   useEffect(() => {
     const saved = localStorage.getItem('igta_cases');
     if (saved) {
@@ -56,6 +70,7 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Sync cases to local storage whenever they change
   useEffect(() => {
     localStorage.setItem('igta_cases', JSON.stringify(cases));
   }, [cases]);
@@ -64,12 +79,11 @@ const App: React.FC = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const pass = formData.get('password');
-    // Simple demo password
     if (pass === 'igta123') {
       setIsAuthenticated(true);
       setLoginError('');
     } else {
-      setLoginError('Invalid Administrator Credentials');
+      setLoginError('Invalid Administrative Security Key');
     }
   };
 
@@ -77,17 +91,26 @@ const App: React.FC = () => {
     setCases(prev => prev.map(c => c.id === updatedCase.id ? updatedCase : c));
   };
 
-  const addCase = () => {
+  const handleCreateCase = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    const type = formData.get('type') as CaseType;
+    const source = formData.get('source') as InitiationSource;
+    const district = formData.get('district') as string;
+    const office = formData.get('office') as string;
+    const customId = formData.get('customId') as string;
+
     const newCase: IGCase = {
-      id: `IGTA/NEW/${new Date().getFullYear()}/${(cases.length + 1).toString().padStart(3, '0')}`,
-      type: 'Complaint',
-      source: 'Finance',
+      id: customId || manualCaseId,
+      type,
+      source,
       dateReceived: new Date().toISOString().split('T')[0],
-      district: 'Karachi South',
-      officeConcerned: 'DAO Karachi',
+      district,
+      officeConcerned: office,
       assignedDIG: 'DIG HQ',
       assignedAIGs: [],
-      status: 'Received',
+      status: 'No action taken/necessary',
       daysPending: 0,
       slaBreach: false,
       cooperative: true,
@@ -96,151 +119,205 @@ const App: React.FC = () => {
       officers: [],
       communications: [],
       documents: [],
-      timeline: [{ id: Date.now().toString(), timestamp: new Date().toISOString(), action: 'Case Created', remarks: 'Case manually initialized by Admin.' }],
+      timeline: [{ 
+        id: Date.now().toString(), 
+        timestamp: new Date().toISOString(), 
+        action: 'Case Initialized', 
+        remarks: `Case formally opened via administrative dashboard for ${office}.` 
+      }],
     };
+
     setCases([newCase, ...cases]);
+    setIsCreateModalOpen(false);
     setSelectedCaseId(newCase.id);
   };
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-emerald-950 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-fade-in relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-50 rounded-full opacity-50 blur-3xl"></div>
-          
-          <div className="text-center mb-8 relative z-10">
-            <div className="inline-flex items-center justify-center p-3 bg-emerald-100 rounded-2xl mb-4 border border-emerald-200">
-              <ShieldAlert className="w-10 h-10 text-emerald-700" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">IGTA Sindh</h1>
-            <p className="text-sm text-emerald-600 mt-1 uppercase tracking-widest font-black">Finance Department</p>
-            <div className="mt-4 px-4 py-2 bg-gray-50 rounded-lg inline-block border text-xs font-semibold text-gray-500">
-              Inspector General: Kashif Almani
-            </div>
-          </div>
-          
-          <form onSubmit={handleLogin} className="space-y-6 relative z-10">
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-tight mb-2">Authorized Officer</label>
-              <input 
-                type="text" 
-                defaultValue="Inspector General / Admin" 
-                readOnly 
-                className="w-full px-4 py-3 rounded-xl border bg-gray-50 text-gray-500 outline-none cursor-not-allowed font-medium" 
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-tight mb-2">Administrative Key</label>
-              <input 
-                name="password"
-                type="password" 
-                placeholder="Enter Secure Key" 
-                autoFocus
-                className="w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-emerald-500 outline-none transition-all shadow-sm focus:border-emerald-500" 
-              />
-            </div>
-            {loginError && (
-              <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm font-semibold border border-red-100">
-                <AlertCircle size={16} />
-                {loginError}
+      <div className="min-h-screen bg-[#064e3b] flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-400 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-600 rounded-full blur-[120px]"></div>
+        </div>
+
+        <div className="bg-white rounded-[2.5rem] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] max-w-xl w-full p-12 animate-fade-in relative z-10 border border-emerald-100">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center mb-8">
+              <div className="w-48 h-24 bg-white rounded-3xl p-2 shadow-inner border border-gray-100 flex items-center justify-center group overflow-hidden relative">
+                <img 
+                  src="https://raw.githubusercontent.com/GovOfSindh/logos/main/finance_dept_black.png" 
+                  alt="Government of Sindh Finance Department Logo" 
+                  className="h-full w-auto object-contain group-hover:scale-110 transition-transform duration-500"
+                />
               </div>
-            )}
-            <button 
-              type="submit"
-              className="w-full bg-emerald-700 text-white py-4 rounded-xl font-bold hover:bg-emerald-800 transition-all shadow-lg active:scale-[0.98]"
-            >
-              Secure Login
-            </button>
-          </form>
-          <div className="mt-8 flex items-center justify-center gap-2 relative z-10">
-             <div className="w-8 h-[1px] bg-gray-200"></div>
-             <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Government of Sindh</p>
-             <div className="w-8 h-[1px] bg-gray-200"></div>
+            </div>
+            
+            <h1 className="text-xl font-black text-gray-900 leading-tight uppercase tracking-tight mb-2">
+              Inspector General of Treasuries & Accounts
+            </h1>
+            <p className="text-sm text-emerald-600 uppercase tracking-[0.25em] font-black">Finance Department</p>
+            <div className="mt-6 flex items-center justify-center gap-2">
+              <div className="h-[1px] w-12 bg-gray-100"></div>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">Government of Sindh</span>
+              <div className="h-[1px] w-12 bg-gray-100"></div>
+            </div>
           </div>
+          
+          <form onSubmit={handleLogin} className="space-y-8">
+            <div className="relative">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Administrative Role</label>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  defaultValue="Inspector General / System Admin" 
+                  readOnly 
+                  className="w-full px-6 py-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-600 text-sm font-bold outline-none cursor-default"
+                />
+              </div>
+            </div>
+
+            <div className="relative">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Security Key (Password)</label>
+              <div className="relative">
+                <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-600/50" size={18} />
+                <input 
+                  type="password" 
+                  name="password"
+                  placeholder="••••••••••••"
+                  required
+                  className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-emerald-900 text-sm font-bold focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all placeholder:text-gray-300"
+                />
+              </div>
+              {loginError && (
+                <div className="mt-3 flex items-center gap-2 text-red-500">
+                  <AlertCircle size={14} />
+                  <span className="text-[10px] font-black uppercase tracking-tight">{loginError}</span>
+                </div>
+              )}
+            </div>
+
+            <button 
+              type="submit" 
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-3 transition-all active:scale-[0.98] group"
+            >
+              <LogIn size={20} className="group-hover:translate-x-1 transition-transform" />
+              Access Portal
+            </button>
+
+            <div className="text-center pt-4 border-t border-gray-50">
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.4em] mb-1">
+                Authorized Personnel Only • Audit Trail Active
+              </p>
+              <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em]">
+                MADE BY WARIS NAWAB PANHWAR
+              </p>
+            </div>
+          </form>
         </div>
       </div>
     );
   }
 
+  const selectedCase = cases.find(c => c.id === selectedCaseId);
+
   return (
     <Layout activeTab={activeTab} setActiveTab={setActiveTab} onLogout={() => setIsAuthenticated(false)}>
-      {selectedCaseId ? (
+      {selectedCase ? (
         <CaseDetails 
-          caseData={cases.find(c => c.id === selectedCaseId)!} 
+          caseData={selectedCase} 
           onBack={() => setSelectedCaseId(null)} 
           onUpdate={updateCase}
         />
       ) : (
         <>
           {activeTab === 'dashboard' && <Dashboard cases={cases} onCaseClick={setSelectedCaseId} />}
-          {activeTab === 'cases' && <CaseList cases={cases} onCaseClick={setSelectedCaseId} onAddCase={addCase} />}
+          {activeTab === 'cases' && <CaseList cases={cases} onCaseClick={setSelectedCaseId} onAddCase={() => setIsCreateModalOpen(true)} />}
           {activeTab === 'audit' && (
-            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-               <div className="p-6 border-b flex justify-between items-center">
-                <h3 className="text-lg font-bold">Comprehensive System Audit Log</h3>
-                <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-100">SECURE REPOSITORY</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
-                    <tr>
-                      <th className="px-6 py-4">Timestamp</th>
-                      <th className="px-6 py-4">Case ID</th>
-                      <th className="px-6 py-4">Action Taken</th>
-                      <th className="px-6 py-4">Outcome / Change</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {cases.flatMap(c => c.timeline.map(t => ({ ...t, caseId: c.id })))
-                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                      .map((entry, i) => (
-                        <tr key={i} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 font-mono text-[11px] text-gray-400">
-                            {new Date(entry.timestamp).toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 font-bold text-emerald-800">{entry.caseId}</td>
-                          <td className="px-6 py-4 font-medium">{entry.action}</td>
-                          <td className="px-6 py-4 text-gray-500 italic">{entry.remarks}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+              <h3 className="text-xl font-black text-gray-800 uppercase mb-6">Central Audit Log</h3>
+              <div className="space-y-4">
+                {cases.flatMap(c => c.timeline.map(t => ({...t, caseId: c.id}))).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).map((log, i) => (
+                  <div key={i} className="flex gap-4 p-4 border-b last:border-0 hover:bg-gray-50 transition-colors rounded-xl">
+                    <div className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded h-fit">{log.caseId}</div>
+                    <div>
+                      <div className="text-sm font-black text-gray-800">{log.action}</div>
+                      <div className="text-xs text-gray-500 mt-1">{log.remarks}</div>
+                      <div className="text-[9px] text-gray-400 mt-2 font-bold uppercase">{new Date(log.timestamp).toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
           {activeTab === 'reports' && (
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="bg-white rounded-xl shadow-sm border p-8">
-                <div className="flex items-center justify-between mb-8">
-                  <div>
-                    <h3 className="text-xl font-bold">Internal Performance Reports</h3>
-                    <p className="text-sm text-gray-500 mt-1">Select a report module for detailed analysis</p>
-                  </div>
-                  <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-100">
-                    <ShieldAlert className="text-emerald-700" size={24} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { title: 'Monthly Pendency Analysis', desc: 'SLA breach tracking and district heatmaps.' },
-                    { title: 'DAO Cooperation Audit', desc: 'Ranking of treasury offices by response speed.' },
-                    { title: 'Inspector Performance', desc: 'Case clearance rate by assigned DIG/AIG.' },
-                    { title: 'Annual Finance Report', desc: 'Comprehensive summary of all IGTA findings.' },
-                  ].map((report, i) => (
-                    <div key={i} className="group p-6 border rounded-xl hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer bg-white relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-50 rounded-bl-full group-hover:bg-emerald-100 transition-colors"></div>
-                      <h4 className="font-bold text-emerald-900 mb-1 relative z-10">{report.title}</h4>
-                      <p className="text-sm text-gray-500 mb-4 relative z-10">{report.desc}</p>
-                      <button className="text-xs font-bold text-emerald-600 uppercase tracking-widest group-hover:text-emerald-800 underline flex items-center gap-2 relative z-10">
-                        Generate PDF Report
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="bg-white rounded-2xl p-12 border border-gray-100 shadow-sm text-center">
+              <ShieldAlert size={64} className="mx-auto text-emerald-100 mb-6" />
+              <h3 className="text-xl font-black text-gray-800 uppercase mb-2">Compliance Reports</h3>
+              <p className="text-gray-500 font-medium">Monthly reporting module is under maintenance for system migration.</p>
             </div>
           )}
         </>
+      )}
+
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-emerald-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-up">
+            <div className="p-8 border-b bg-gray-50 flex justify-between items-center">
+              <h3 className="text-xl font-black text-gray-800 uppercase">Initialize New Case File</h3>
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateCase} className="p-8 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Case Type</label>
+                  <select 
+                    name="type" 
+                    value={formCaseType}
+                    onChange={(e) => setFormCaseType(e.target.value as CaseType)}
+                    className="w-full p-3 rounded-xl border-2 border-gray-100 font-bold text-sm focus:border-emerald-500 outline-none transition-all"
+                  >
+                    {CASE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Initiation Source</label>
+                  <select name="source" className="w-full p-3 rounded-xl border-2 border-gray-100 font-bold text-sm focus:border-emerald-500 outline-none transition-all">
+                    {INITIATION_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">District</label>
+                  <select name="district" className="w-full p-3 rounded-xl border-2 border-gray-100 font-bold text-sm focus:border-emerald-500 outline-none transition-all">
+                    {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Office Concerned</label>
+                  <input name="office" required placeholder="e.g. DAO Karachi West" className="w-full p-3 rounded-xl border-2 border-gray-100 font-bold text-sm focus:border-emerald-500 outline-none transition-all" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">File Number (Auto-Generated)</label>
+                <input name="customId" value={manualCaseId} onChange={(e) => setManualCaseId(e.target.value)} className="w-full p-3 rounded-xl border-2 border-emerald-100 bg-emerald-50 font-black text-emerald-800 text-sm focus:border-emerald-500 outline-none transition-all" />
+              </div>
+
+              <div className="pt-6 flex gap-4">
+                <button type="submit" className="flex-1 bg-emerald-700 text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg shadow-emerald-900/20 hover:bg-emerald-800 transition-all">
+                  Open File
+                </button>
+                <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-8 py-4 text-gray-500 font-black uppercase text-xs tracking-widest">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </Layout>
   );

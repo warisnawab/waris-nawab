@@ -18,23 +18,25 @@ const COLORS = ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#064e3b'
 const Dashboard: React.FC<DashboardProps> = ({ cases, onCaseClick }) => {
   const stats = {
     total: cases.length,
-    active: cases.filter(c => c.status !== 'Closed').length,
-    pending15: cases.filter(c => c.daysPending > 15 && c.status !== 'Closed').length,
-    pending30: cases.filter(c => c.daysPending > 30 && c.status !== 'Closed').length,
+    // Fix: Updated status checks to use 'Decision sent to Finance Department' instead of 'Closed'
+    active: cases.filter(c => c.status !== 'Decision sent to Finance Department').length,
+    pending15: cases.filter(c => c.daysPending > 15 && c.status !== 'Decision sent to Finance Department').length,
+    pending30: cases.filter(c => c.daysPending > 30 && c.status !== 'Decision sent to Finance Department').length,
     nonCooperative: cases.filter(c => !c.cooperative).length,
     
-    // Type Breakdown
-    complaints: cases.filter(c => c.type === 'Complaint' && c.status !== 'Closed').length,
-    inquiries: cases.filter(c => c.type === 'Inquiry' && c.status !== 'Closed').length,
-    inspections: cases.filter(c => c.type === 'Inspection' && c.status !== 'Closed').length,
-    monitoring: cases.filter(c => (c.type === 'Monitoring' || c.type === 'Surprise Visit' || c.type === 'Re-Inspection') && c.status !== 'Closed').length,
+    // Type Breakdown - updated for CaseStatus
+    complaints: cases.filter(c => c.type === 'Complaint' && c.status !== 'Decision sent to Finance Department').length,
+    inquiries: cases.filter(c => c.type === 'Inquiry' && c.status !== 'Decision sent to Finance Department').length,
+    inspections: cases.filter(c => c.type === 'Inspection' && c.status !== 'Decision sent to Finance Department').length,
+    monitoring: cases.filter(c => (c.type === 'Monitoring' || c.type === 'Surprise Visit' || c.type === 'Re-Inspection') && c.status !== 'Decision sent to Finance Department').length,
   };
 
+  // Fix: statusData mapped to valid CaseStatus workflow values
   const statusData = [
-    { name: 'Under Process', value: cases.filter(c => c.status === 'Under Process').length },
-    { name: 'Awaiting Response', value: cases.filter(c => c.status === 'Awaiting Response').length },
-    { name: 'Completed', value: cases.filter(c => c.status === 'Inspection Completed' || c.status === 'Report Submitted').length },
-    { name: 'On Hold', value: cases.filter(c => c.status === 'On Hold').length },
+    { name: 'Initial', value: cases.filter(c => c.status === 'No action taken/necessary').length },
+    { name: 'Letter Sent', value: cases.filter(c => c.status === 'Letter sent to concerned').length },
+    { name: 'Reminders Issued', value: cases.filter(c => c.status.includes('Reminder')).length },
+    { name: 'Final Decision', value: cases.filter(c => c.status === 'Decision sent to Finance Department').length },
   ].filter(d => d.value > 0);
 
   const districtData = Object.entries(
@@ -182,7 +184,7 @@ const Dashboard: React.FC<DashboardProps> = ({ cases, onCaseClick }) => {
             </thead>
             <tbody className="divide-y text-sm">
               {cases
-                .filter(c => c.status !== 'Closed')
+                .filter(c => c.status !== 'Decision sent to Finance Department')
                 .sort((a, b) => b.daysPending - a.daysPending)
                 .slice(0, 5)
                 .map((c) => (

@@ -1,9 +1,18 @@
 
 export type CaseType = 'Complaint' | 'Inquiry' | 'Inspection' | 'Monitoring' | 'Re-Inspection' | 'Surprise Visit' | 'Pension Verification';
 export type InitiationSource = 'Finance' | 'DAO' | 'Other Department' | 'Complainant';
-export type CaseStatus = 'Received' | 'Under Process' | 'Awaiting Response' | 'Inspection Completed' | 'Inquiry in Progress' | 'Report Submitted' | 'Closed' | 'On Hold';
+
+// Updated workflow statuses
+export type CaseStatus = 
+  | 'No action taken/necessary' 
+  | 'Letter sent to concerned' 
+  | 'Reminder 1 issued' 
+  | 'Reminder 2 issued' 
+  | 'Final reminder issued'
+  | 'Decision sent to Finance Department';
+
 export type CommunicationType = 'Initial Letter' | 'Reminder 1' | 'Reminder 2' | 'Final Reminder' | 'Response';
-export type ResponseStatus = 'Awaiting' | 'Received' | 'Partial' | 'No Response';
+export type ResponseStatus = 'Awaiting' | 'Received' | 'Satisfactory' | 'New letter required';
 export type ResponseQuality = 'Complete' | 'Partial' | 'Irrelevant' | 'Evasive';
 export type DocumentType = 'Finance Letter' | 'Complaint Application' | 'DAO Reply' | 'Reminder Letter' | 'Inspection Report' | 'Inquiry Report' | 'Pension Verification' | 'Final Report';
 
@@ -55,17 +64,28 @@ export interface Communication {
   status: ResponseStatus;
   quality?: ResponseQuality;
   reminderCount: number;
+  recipients: string[]; // Names/Designations of recipients
+  recipientCount: number;
+}
+
+export interface DocumentSection {
+  department: string;
+  summary: string;
 }
 
 export interface IGDocument {
   id: string;
   type: DocumentType;
-  fileNumber: string;
+  fileNumber: string; // The official number found on the paper
+  date?: string;
+  district?: string;
+  signingAuthority?: string;
   fileName: string;
   summary: string;
   approved: boolean;
   ocrText?: string;
   uploadDate: string;
+  sections?: DocumentSection[]; // For large documents with multi-dept breakdowns
 }
 
 export interface AuditEntry {

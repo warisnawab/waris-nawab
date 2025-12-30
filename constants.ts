@@ -10,7 +10,12 @@ export const INITIATION_SOURCES: InitiationSource[] = [
 ];
 
 export const CASE_STATUSES: CaseStatus[] = [
-  'Received', 'Under Process', 'Awaiting Response', 'Inspection Completed', 'Inquiry in Progress', 'Report Submitted', 'Closed', 'On Hold'
+  'No action taken/necessary',
+  'Letter sent to concerned',
+  'Reminder 1 issued',
+  'Reminder 2 issued',
+  'Final reminder issued',
+  'Decision sent to Finance Department'
 ];
 
 export const DOCUMENT_TYPES: DocumentType[] = [

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { IGCase } from '../types';
-import { Search, Filter, Plus, ChevronDown, Download } from 'lucide-react';
+import { Search, Filter, Plus, ChevronDown, Download, AlertCircle } from 'lucide-react';
 import { CASE_TYPES, DISTRICTS, CASE_STATUSES } from '../constants';
 
 interface CaseListProps {
@@ -14,7 +14,6 @@ const CaseList: React.FC<CaseListProps> = ({ cases, onCaseClick, onAddCase }) =>
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [districtFilter, setDistrictFilter] = useState('');
 
   const filteredCases = useMemo(() => {
     return cases.filter(c => {
@@ -25,15 +24,25 @@ const CaseList: React.FC<CaseListProps> = ({ cases, onCaseClick, onAddCase }) =>
       
       const matchesType = !typeFilter || c.type === typeFilter;
       const matchesStatus = !statusFilter || c.status === statusFilter;
-      const matchesDistrict = !districtFilter || c.district === districtFilter;
 
-      return matchesSearch && matchesType && matchesStatus && matchesDistrict;
+      return matchesSearch && matchesType && matchesStatus;
     });
-  }, [cases, searchTerm, typeFilter, statusFilter, districtFilter]);
+  }, [cases, searchTerm, typeFilter, statusFilter]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'No action taken/necessary': return 'bg-gray-100 text-gray-500 border-gray-200';
+      case 'Decision sent to Finance Department': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Letter sent to concerned': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'Reminder 1 issued': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'Reminder 2 issued': return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 'Final reminder issued': return 'bg-red-50 text-red-700 border-red-200';
+      default: return 'bg-gray-50 text-gray-600 border-gray-100';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Controls */}
       <div className="flex flex-wrap gap-4 items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div className="relative flex-1 min-w-[300px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600/50" size={18} />
@@ -75,7 +84,6 @@ const CaseList: React.FC<CaseListProps> = ({ cases, onCaseClick, onAddCase }) =>
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -85,8 +93,7 @@ const CaseList: React.FC<CaseListProps> = ({ cases, onCaseClick, onAddCase }) =>
                 <th className="px-6 py-4">Case Type</th>
                 <th className="px-6 py-4">District</th>
                 <th className="px-6 py-4">Source</th>
-                <th className="px-6 py-4">Pendency</th>
-                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Administrative Status</th>
                 <th className="px-6 py-4 text-center">Cooperation</th>
               </tr>
             </thead>
@@ -102,16 +109,7 @@ const CaseList: React.FC<CaseListProps> = ({ cases, onCaseClick, onAddCase }) =>
                   <td className="px-6 py-4 text-xs font-medium text-gray-600">{c.district}</td>
                   <td className="px-6 py-4 text-xs font-semibold text-gray-400">{c.source}</td>
                   <td className="px-6 py-4">
-                    <span className={`text-xs font-black ${c.daysPending > 30 ? 'text-red-600' : 'text-emerald-700'}`}>
-                      {c.daysPending}d
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`text-[10px] px-2 py-1 rounded font-black uppercase border ${
-                      c.status === 'Closed' ? 'bg-gray-100 text-gray-500 border-gray-200' :
-                      c.status === 'On Hold' ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                      'bg-emerald-100 text-emerald-800 border-emerald-200'
-                    }`}>
+                    <span className={`text-[10px] px-2 py-1 rounded font-black uppercase border ${getStatusColor(c.status)}`}>
                       {c.status}
                     </span>
                   </td>
@@ -124,13 +122,6 @@ const CaseList: React.FC<CaseListProps> = ({ cases, onCaseClick, onAddCase }) =>
                   </td>
                 </tr>
               ))}
-              {filteredCases.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400 italic font-medium">
-                    No matching records found in treasury archive.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
