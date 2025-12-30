@@ -1,0 +1,7 @@
+{
+  "name": "IGTA Sindh Case Management System",
+  "description": "A secure internal dashboard for the Inspector General of Treasuries & Accounts to monitor complaints, inspections, and inquiries with AI-powered document summarization.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

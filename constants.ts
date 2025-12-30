@@ -1,0 +1,32 @@
+
+import { CaseType, CaseStatus, InitiationSource, DocumentType } from './types';
+
+export const CASE_TYPES: CaseType[] = [
+  'Complaint', 'Inquiry', 'Inspection', 'Monitoring', 'Re-Inspection', 'Surprise Visit', 'Pension Verification'
+];
+
+export const INITIATION_SOURCES: InitiationSource[] = [
+  'Finance', 'DAO', 'Other Department', 'Complainant'
+];
+
+export const CASE_STATUSES: CaseStatus[] = [
+  'Received', 'Under Process', 'Awaiting Response', 'Inspection Completed', 'Inquiry in Progress', 'Report Submitted', 'Closed', 'On Hold'
+];
+
+export const DOCUMENT_TYPES: DocumentType[] = [
+  'Finance Letter', 'Complaint Application', 'DAO Reply', 'Reminder Letter', 'Inspection Report', 'Inquiry Report', 'Pension Verification', 'Final Report'
+];
+
+export const DISTRICTS = [
+  'Karachi Central', 'Karachi East', 'Karachi South', 'Karachi West', 'Korangi', 'Malir', 'Keamari',
+  'Hyderabad', 'Jamshoro', 'Matiari', 'Tando Allahyar', 'Tando Muhammad Khan', 'Badin', 'Thatta', 'Sujawal',
+  'Sukkur', 'Ghotki', 'Khairpur', 'Larkana', 'Shikarpur', 'Jacobabad', 'Kashmore', 'Qambar Shahdadkot',
+  'Mirpurkhas', 'Umerkot', 'Tharparkar', 'Shaheed Benazirabad', 'Sanghar', 'Naushahro Feroze'
+];
+
+export const DIG_OFFICERS = ['DIG HQ', 'DIG Inspection', 'DIG Pensions', 'DIG Complaints'];
+
+export const SLA_THRESHOLDS = {
+  DAO: 15,
+  DEPARTMENT: 21
+};
