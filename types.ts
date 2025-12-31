@@ -1,8 +1,8 @@
 
 export type CaseType = 'Complaint' | 'Inquiry' | 'Inspection' | 'Monitoring' | 'Re-Inspection' | 'Surprise Visit' | 'Pension Verification';
 export type InitiationSource = 'Finance' | 'DAO' | 'Other Department' | 'Complainant';
+export type CasePriority = 'Low' | 'Medium' | 'High';
 
-// Updated workflow statuses
 export type CaseStatus = 
   | 'No action taken/necessary' 
   | 'Letter sent to concerned' 
@@ -16,10 +16,13 @@ export type ResponseStatus = 'Awaiting' | 'Received' | 'Satisfactory' | 'New let
 export type ResponseQuality = 'Complete' | 'Partial' | 'Irrelevant' | 'Evasive';
 export type DocumentType = 'Finance Letter' | 'Complaint Application' | 'DAO Reply' | 'Reminder Letter' | 'Inspection Report' | 'Inquiry Report' | 'Pension Verification' | 'Final Report';
 
+export type Designation = 'DIG' | 'AIG' | 'Assistant' | 'Inspector' | 'Senior Computer Operator' | 'Sub-Accountant' | 'Clerk' | 'None';
+
 export interface IGCase {
-  id: string; // IGTA/TYPE/YEAR/SERIAL
+  id: string; 
   type: CaseType;
   source: InitiationSource;
+  priority: CasePriority;
   dateReceived: string;
   district: string;
   officeConcerned: string;
@@ -46,11 +49,12 @@ export interface ExternalFile {
 }
 
 export interface Officer {
+  id: string;
   name: string;
-  designation: string;
+  designation: Designation;
   department: string;
   district: string;
-  role: 'Primary' | 'Supporting' | 'Supervisory';
+  role: 'Primary' | 'Supporting' | 'Supervisory' | 'None';
 }
 
 export interface Communication {
@@ -64,7 +68,7 @@ export interface Communication {
   status: ResponseStatus;
   quality?: ResponseQuality;
   reminderCount: number;
-  recipients: string[]; // Names/Designations of recipients
+  recipients: string[]; 
   recipientCount: number;
 }
 
@@ -76,7 +80,7 @@ export interface DocumentSection {
 export interface IGDocument {
   id: string;
   type: DocumentType;
-  fileNumber: string; // The official number found on the paper
+  fileNumber: string; 
   date?: string;
   district?: string;
   signingAuthority?: string;
@@ -85,7 +89,7 @@ export interface IGDocument {
   approved: boolean;
   ocrText?: string;
   uploadDate: string;
-  sections?: DocumentSection[]; // For large documents with multi-dept breakdowns
+  sections?: DocumentSection[]; 
 }
 
 export interface AuditEntry {

@@ -1,5 +1,5 @@
 
-import { CaseType, CaseStatus, InitiationSource, DocumentType } from './types';
+import { CaseType, CaseStatus, InitiationSource, DocumentType, Designation, CasePriority } from './types';
 
 export const CASE_TYPES: CaseType[] = [
   'Complaint', 'Inquiry', 'Inspection', 'Monitoring', 'Re-Inspection', 'Surprise Visit', 'Pension Verification'
@@ -17,6 +17,12 @@ export const CASE_STATUSES: CaseStatus[] = [
   'Final reminder issued',
   'Decision sent to Finance Department'
 ];
+
+export const DESIGNATIONS: Designation[] = [
+  'DIG', 'AIG', 'Assistant', 'Inspector', 'Senior Computer Operator', 'Sub-Accountant', 'Clerk', 'None'
+];
+
+export const PRIORITIES: CasePriority[] = ['Low', 'Medium', 'High'];
 
 export const DOCUMENT_TYPES: DocumentType[] = [
   'Finance Letter', 'Complaint Application', 'DAO Reply', 'Reminder Letter', 'Inspection Report', 'Inquiry Report', 'Pension Verification', 'Final Report'
